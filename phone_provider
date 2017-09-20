@@ -1,0 +1,54 @@
+#/usr/bin/python
+#coding: utf8
+import urllib.request
+import re
+
+def getPageCode(url):
+    file = urllib.request.urlopen(url)
+    text = file.read()
+    return text
+
+def parseString(src,result):
+    pat = []
+    pat.append('(?<=归属地：</span>).+(?=<br />)')
+    pat.append('(?<=卡类型：</span>).+(?=<br />)')
+    pat.append('(?<=运营商：</span>).+(?=<br />)')
+    pat.append('(?<=区号：</span>)\d+(?=<br />)')
+    pat.append('(?<=邮编：</span>)\d+(?=<br />)')
+
+    item = []
+
+    for i in range(len(pat)):
+
+        m = re.search(pat[i], src.decode("utf-8"))
+
+        if m:
+            v = m.group(0)
+            item.append(v)
+    return item
+
+def getProvider(phoneNum, result):
+    url = "http://www.sjgsd.com/n/?q=%s" %phoneNum
+    text = getPageCode(url)
+    item = parseString(text, result)
+    result.append((phoneNum, item))
+
+
+def writeResult(request):
+
+    f = open("request.log","w")
+    for num, item in request:
+        f.write("%s:\t" %num)
+        for i in item:
+            f.write("%s,\t" %i)
+        f.write("\n")
+    f.close()
+
+if __name__ == '__main__':
+    result = []
+    for line in open("test.txt","r"):
+        phoneNum = line.strip(" \t\r\n")
+        getProvider(phoneNum,result)
+        print ("%s is finished" %phoneNum)
+
+    writeResult(result)
